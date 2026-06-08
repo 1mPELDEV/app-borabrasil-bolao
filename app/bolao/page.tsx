@@ -45,7 +45,7 @@ useEffect(() => {
     setMatch(data);
 
     const user =
-      JSON.parse(storedUser);
+      JSON.parse(storedUser!);
 
 const userPrediction =
   await getPrediction(
@@ -82,7 +82,7 @@ const userPrediction =
 
     if (!storedUser) return;
 
-    const user = JSON.parse(storedUser);
+    const user = JSON.parse(storedUser!);
 
     const savedPrediction =
     await savePrediction({
