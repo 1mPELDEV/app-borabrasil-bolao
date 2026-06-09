@@ -31,6 +31,17 @@ export async function getMatch() {
   return match;
 }
 
+export async function getMatches() {
+  const matches =
+    await prisma.match.findMany({
+      orderBy: {
+        startsAt: "asc",
+      },
+    });
+
+  return matches;
+}
+
 export async function finishMatch(
   matchId: string,
   homeScore: number,

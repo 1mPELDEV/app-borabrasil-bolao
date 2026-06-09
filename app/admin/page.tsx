@@ -2,13 +2,22 @@
 
 import { useEffect, useState } from "react";
 import {
-  finishMatch,
-  getMatch,
-} from "../actions/match";
+  createMatch,
+  getMatches,
+  deleteMatch,
+} from "../actions/admin";
+
+import { finishMatch } from "../actions/match";
 
 export default function AdminPage() {
-  const [match, setMatch] =
-    useState<any>(null);
+  const [matches, setMatches] =
+    useState<any[]>([]);
+
+  const [awayTeam, setAwayTeam] =
+    useState("");
+
+  const [startsAt, setStartsAt] =
+    useState("");
 
   const [homeScore, setHomeScore] =
     useState(0);
@@ -16,112 +25,192 @@ export default function AdminPage() {
   const [awayScore, setAwayScore] =
     useState(0);
 
+  async function loadMatches() {
+    const data =
+      await getMatches();
+
+    setMatches(data);
+  }
+
   useEffect(() => {
-    const storedUser =
-      localStorage.getItem("user");
-
-    if (!storedUser) {
-      window.location.href = "/";
-      return;
-    }
-
-    const user =
-      JSON.parse(storedUser);
-
-    if (user.username !== "pedro felipe") {
-      window.location.href =
-        "/bolao";
-
-      return;
-    }
-
-    async function loadMatch() {
-      const data =
-        await getMatch();
-
-      setMatch(data);
-    }
-
-    loadMatch();
+    loadMatches();
   }, []);
 
-  async function handleFinishMatch() {
-    if (!match) return;
+  async function handleCreateMatch() {
+    if (!awayTeam || !startsAt)
+      return;
 
+    await createMatch({
+      awayTeam,
+      startsAt,
+    });
+
+    setAwayTeam("");
+    setStartsAt("");
+
+    await loadMatches();
+
+    alert("Jogo criado 😎");
+  }
+
+  async function handleDelete(
+    matchId: string
+  ) {
+    await deleteMatch(matchId);
+
+    await loadMatches();
+
+    alert("Jogo deletado");
+  }
+
+  async function handleFinish(
+    matchId: string
+  ) {
     await finishMatch(
-      match.id,
+      matchId,
       homeScore,
       awayScore
     );
 
-    alert(
-      "Jogo finalizado 😎"
-    );
-  }
+    await loadMatches();
 
-  if (!match) {
-    return (
-      <main className="min-h-screen bg-zinc-900 text-white flex items-center justify-center">
-        <h1>Carregando...</h1>
-      </main>
+    alert(
+      "Jogo finalizado 🏆"
     );
   }
 
   return (
-    <main className="min-h-screen bg-zinc-900 text-white flex items-center justify-center">
-      <div className="bg-zinc-800 p-8 rounded-xl w-full max-w-md text-center">
-        <h1 className="text-3xl font-bold">
-          🛠️ Painel Admin
+    <main className="min-h-screen bg-zinc-900 text-white p-8">
+      <div className="max-w-3xl mx-auto">
+        <h1 className="text-4xl font-bold mb-8">
+          Painel Admin ⚙️
         </h1>
 
-        <p className="mt-4">
-          {match.homeTeam}
-        </p>
-
-        <p className="text-zinc-500">
-          VS
-        </p>
-
-        <p>
-          {match.awayTeam}
-        </p>
-
-        <div className="flex justify-center gap-4 mt-8">
-          <input
-            type="number"
-            value={homeScore}
-            onChange={(e) =>
-              setHomeScore(
-                Number(e.target.value)
-              )
-            }
-            className="w-20 p-3 rounded bg-zinc-700 text-center text-2xl"
-          />
-
-          <span className="text-3xl">
-            x
-          </span>
+        <div className="bg-zinc-800 rounded-xl p-6 mb-8">
+          <h2 className="text-2xl font-bold mb-4">
+            Novo jogo
+          </h2>
 
           <input
-            type="number"
-            value={awayScore}
+            type="text"
+            placeholder="Adversário"
+            value={awayTeam}
             onChange={(e) =>
-              setAwayScore(
-                Number(e.target.value)
+              setAwayTeam(
+                e.target.value
               )
             }
-            className="w-20 p-3 rounded bg-zinc-700 text-center text-2xl"
+            className="w-full p-3 rounded bg-zinc-700 mb-4"
           />
+
+          <input
+            type="datetime-local"
+            value={startsAt}
+            onChange={(e) =>
+              setStartsAt(
+                e.target.value
+              )
+            }
+            className="w-full p-3 rounded bg-zinc-700 mb-4"
+          />
+
+          <button
+            onClick={
+              handleCreateMatch
+            }
+            className="bg-green-600 px-6 py-3 rounded-lg font-bold"
+          >
+            Criar jogo
+          </button>
         </div>
 
-        <button
-          onClick={
-            handleFinishMatch
-          }
-          className="w-full bg-green-600 mt-8 p-3 rounded-lg font-bold"
-        >
-          Finalizar jogo
-        </button>
+        <div className="space-y-4">
+          {matches.map((match) => (
+            <div
+              key={match.id}
+              className="bg-zinc-800 rounded-xl p-5"
+            >
+              <h2 className="text-2xl font-bold">
+                {match.homeTeam} x{" "}
+                {match.awayTeam}
+              </h2>
+
+              <p className="text-zinc-400 mt-2">
+                {new Date(
+                  match.startsAt
+                ).toLocaleString(
+                  "pt-BR"
+                )}
+              </p>
+
+              {match.finished ? (
+                <p className="text-green-400 mt-4">
+                  Finalizado:{" "}
+                  {match.homeScore} x{" "}
+                  {match.awayScore}
+                </p>
+              ) : (
+                <div className="mt-4">
+                  <div className="flex gap-2 mb-4">
+                    <input
+                      type="number"
+                      placeholder="Brasil"
+                      onChange={(e) =>
+                        setHomeScore(
+                          Number(
+                            e.target
+                              .value
+                          )
+                        )
+                      }
+                      className="w-24 p-2 rounded bg-zinc-700"
+                    />
+
+                    <input
+                      type="number"
+                      placeholder={
+                        match.awayTeam
+                      }
+                      onChange={(e) =>
+                        setAwayScore(
+                          Number(
+                            e.target
+                              .value
+                          )
+                        )
+                      }
+                      className="w-24 p-2 rounded bg-zinc-700"
+                    />
+                  </div>
+
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() =>
+                        handleFinish(
+                          match.id
+                        )
+                      }
+                      className="bg-blue-600 px-4 py-2 rounded"
+                    >
+                      Finalizar
+                    </button>
+
+                    <button
+                      onClick={() =>
+                        handleDelete(
+                          match.id
+                        )
+                      }
+                      className="bg-red-600 px-4 py-2 rounded"
+                    >
+                      Excluir
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
       </div>
     </main>
   );
