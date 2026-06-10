@@ -5,6 +5,7 @@ import { getMatches } from "../actions/match";
 import { savePrediction } from "../actions/prediction";
 import { getRanking } from "../actions/ranking";
 import { getPrediction } from "../actions/get-prediction";
+import { getUsedPredictions } from "../actions/get-used-predictions";
 
 export default function BolaoPage() {
   const [matches, setMatches] =
@@ -16,8 +17,12 @@ export default function BolaoPage() {
   const [predictions, setPredictions] =
     useState<any>({});
 
+  const [usedPredictions, setUsedPredictions] =
+  useState<any>({});
+
   const [guesses, setGuesses] =
     useState<any>({});
+
 
   useEffect(() => {
     const storedUser =
@@ -36,6 +41,22 @@ export default function BolaoPage() {
         await getMatches();
 
       setMatches(matchesData);
+
+      const usedMap: any = {};
+
+    for (const match of matchesData) {
+      const used =
+        await getUsedPredictions(
+          match.id
+        );
+
+      usedMap[match.id] =
+        used;
+    }
+
+    setUsedPredictions(
+      usedMap
+  );
 
       const predictionMap: any =
         {};
@@ -117,15 +138,45 @@ A seleção vai lembrar...`
     return;
   }
 }
-    const savedPrediction =
-      await savePrediction({
-        userId: user.id,
-        matchId,
-        homeGuess:
-          currentGuess.homeGuess,
-        awayGuess:
-          currentGuess.awayGuess,
-      });
+const savedPrediction =
+  await savePrediction({
+    userId: user.id,
+    matchId,
+    homeGuess:
+      currentGuess.homeGuess,
+    awayGuess:
+      currentGuess.awayGuess,
+  });
+
+// 🚫 placar já lotado
+if (
+  "error" in savedPrediction &&
+  savedPrediction.error
+) {
+  alert(
+    `🚫 Esse placar já foi escolhido 2x
+
+Quem pegou:
+
+${savedPrediction.users.join(
+  "\n"
+)}
+
+Escolha outro 😎`
+  );
+
+  return;
+}
+
+setPredictions(
+  (prev: any) => ({
+    ...prev,
+    [matchId]:
+      savedPrediction,
+  })
+);
+
+alert("Palpite salvo 😎");
 
     setPredictions(
       (prev: any) => ({
@@ -295,6 +346,56 @@ A seleção vai lembrar...`
                     ? "Apostas encerradas ⛔"
                     : "Salvar Palpite"}
                 </button>
+                      <div className="mt-6 text-left">
+        <h3 className="font-bold text-yellow-400 mb-2">
+          🔥 Placares escolhidos
+        </h3>
+
+        <div className="space-y-2">
+          {Object.entries(
+            usedPredictions[
+              match.id
+            ] || {}
+          ).map(
+            (
+              [score, users]: any
+            ) => (
+              <div
+                key={score}
+                className="bg-zinc-700 rounded-lg p-2 flex justify-between items-center"
+              >
+                <span className="font-bold">
+                  {score}
+                </span>
+
+                <div className="text-sm text-zinc-300 text-right">
+                  {users.join(
+                    ", "
+                  )}
+
+                  {users.length >=
+                    2 && (
+                    <span className="ml-2 text-red-400 font-bold">
+                      🔒
+                    </span>
+                  )}
+                </div>
+              </div>
+            )
+          )}
+
+          {Object.keys(
+            usedPredictions[
+              match.id
+            ] || {}
+          ).length ===
+            0 && (
+            <p className="text-zinc-500 text-sm">
+              Ninguém apostou ainda 👀
+            </p>
+          )}
+        </div>
+      </div>
 
                 {prediction && (
                   <div className="mt-6 bg-zinc-700 rounded-xl p-4">
