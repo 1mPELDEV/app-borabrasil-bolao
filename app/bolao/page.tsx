@@ -23,7 +23,25 @@ export default function BolaoPage() {
   const [guesses, setGuesses] =
     useState<any>({});
 
+  async function loadUsedPredictions(
+  matchesData: any[]
+) {
+  const usedMap: any = {};
 
+  for (const match of matchesData) {
+    const used =
+      await getUsedPredictions(
+        match.id
+      );
+
+    usedMap[match.id] =
+      used;
+  }
+
+  setUsedPredictions(
+    usedMap
+  );
+}
   useEffect(() => {
     const storedUser =
       localStorage.getItem("user");
@@ -42,21 +60,9 @@ export default function BolaoPage() {
 
       setMatches(matchesData);
 
-      const usedMap: any = {};
-
-    for (const match of matchesData) {
-      const used =
-        await getUsedPredictions(
-          match.id
-        );
-
-      usedMap[match.id] =
-        used;
-    }
-
-    setUsedPredictions(
-      usedMap
-  );
+    await loadUsedPredictions(
+      matchesData
+    );
 
       const predictionMap: any =
         {};
@@ -104,57 +110,92 @@ export default function BolaoPage() {
     loadData();
   }, []);
 
-  async function handleSavePrediction(
-    matchId: string
-  ) {
-    const storedUser =
-      localStorage.getItem("user");
-
-    if (!storedUser) return;
-
-    const user =
-      JSON.parse(storedUser!);
-
-    const currentGuess =
-      guesses[matchId];
-
-    // 🇧🇷 Anti-zica
-if (
-  currentGuess.homeGuess <=
-  currentGuess.awayGuess
+async function handleSavePrediction(
+  matchId: string
 ) {
-  const confirmed =
-    confirm(
-      `🚨 ALERTA DE TRAÍRA 🚨
+  const storedUser =
+    localStorage.getItem("user");
+
+  if (!storedUser) return;
+
+  const user =
+    JSON.parse(storedUser!);
+
+  const currentGuess =
+    guesses[matchId];
+
+  const match =
+    matches.find(
+      (m) => m.id === matchId
+    );
+
+  // 🇧🇷 Anti-zika inteligente
+  if (match) {
+    const brasilIsHome =
+      match.homeTeam.includes(
+        "Brasil"
+      );
+
+    const brasilIsAway =
+      match.awayTeam.includes(
+        "Brasil"
+      );
+
+    let bettingAgainstBrazil =
+      false;
+
+    // Brasil mandante
+    if (brasilIsHome) {
+      bettingAgainstBrazil =
+        currentGuess.awayGuess >
+        currentGuess.homeGuess;
+    }
+
+    // Brasil visitante
+    if (brasilIsAway) {
+      bettingAgainstBrazil =
+        currentGuess.homeGuess >
+        currentGuess.awayGuess;
+    }
+
+    if (
+      bettingAgainstBrazil
+    ) {
+      const confirmed =
+        confirm(
+          `🚨 ALERTA DE TRAÍRA 🚨
 
 Você está apostando contra o Brasil 😡🇧🇷
 
 Tem CERTEZA disso?
 
-A seleção vai lembrar...`
-    );
+A seleção vai lembrar... 👀`
+        );
 
-  if (!confirmed) {
-    return;
+      if (!confirmed) {
+        return;
+      }
+    }
   }
-}
-const savedPrediction =
-  await savePrediction({
-    userId: user.id,
-    matchId,
-    homeGuess:
-      currentGuess.homeGuess,
-    awayGuess:
-      currentGuess.awayGuess,
-  });
 
-// 🚫 placar já lotado
-if (
-  "error" in savedPrediction &&
-  savedPrediction.error
-) {
-  alert(
-    `🚫 Esse placar já foi escolhido 2x
+  const savedPrediction =
+    await savePrediction({
+      userId: user.id,
+      matchId,
+      homeGuess:
+        currentGuess.homeGuess,
+      awayGuess:
+        currentGuess.awayGuess,
+    });
+
+  // 🚫 placar lotado
+  if (
+    "error" in
+      savedPrediction &&
+    savedPrediction.error
+  ) {
+    alert(
+      `🚫 Esse placar já foi escolhido 2x
 
 Quem pegou:
 
@@ -163,36 +204,37 @@ ${savedPrediction.users.join(
 )}
 
 Escolha outro 😎`
-  );
-
-  return;
-}
-
-setPredictions(
-  (prev: any) => ({
-    ...prev,
-    [matchId]:
-      savedPrediction,
-  })
-);
-
-alert("Palpite salvo 😎");
-
-    setPredictions(
-      (prev: any) => ({
-        ...prev,
-        [matchId]:
-          savedPrediction,
-      })
     );
 
-    alert("Palpite salvo 😎");
-
-    const rankingData =
-      await getRanking();
-
-    setRanking(rankingData);
+    return;
   }
+
+  // salva no state
+  setPredictions(
+    (prev: any) => ({
+      ...prev,
+      [matchId]:
+        savedPrediction,
+    })
+  );
+
+  // atualiza placares usados
+  await loadUsedPredictions(
+    matches
+  );
+
+  // atualiza ranking
+  const rankingData =
+    await getRanking();
+
+  setRanking(
+    rankingData
+  );
+
+  alert(
+    "Palpite salvo 😎"
+  );
+}
 
   if (!matches.length) {
     return (
