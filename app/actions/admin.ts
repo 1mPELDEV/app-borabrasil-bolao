@@ -39,9 +39,22 @@ export async function getMatches() {
 export async function deleteMatch(
   matchId: string
 ) {
+  // apaga todos os palpites
+  // ligados ao jogo
+  await prisma.prediction.deleteMany({
+    where: {
+      matchId,
+    },
+  });
+
+  // depois apaga o jogo
   await prisma.match.delete({
     where: {
       id: matchId,
     },
   });
+
+  return {
+    success: true,
+  };
 }

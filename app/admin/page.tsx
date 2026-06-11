@@ -76,7 +76,7 @@ export default function AdminPage() {
 
     await loadMatches();
 
-    alert("Jogo deletado");
+    alert("Jogo deletado 😈");
   }
 
   async function handleDeleteUser(
@@ -159,7 +159,7 @@ Todos os palpites serão apagados também.`
             onClick={
               handleCreateMatch
             }
-            className="bg-green-600 px-6 py-3 rounded-lg font-bold"
+            className="bg-green-600 hover:bg-green-500 px-6 py-3 rounded-lg font-bold"
           >
             Criar jogo
           </button>
@@ -184,9 +184,7 @@ Todos os palpites serão apagados também.`
                   className="bg-zinc-700 rounded-lg p-3 flex justify-between items-center"
                 >
                   <span>
-                    {
-                      user.username
-                    }
+                    {user.username}
                   </span>
 
                   <button
@@ -215,13 +213,8 @@ Todos os palpites serão apagados também.`
                 className="bg-zinc-800 rounded-xl p-5"
               >
                 <h2 className="text-2xl font-bold">
-                  {
-                    match.homeTeam
-                  }{" "}
-                  x{" "}
-                  {
-                    match.awayTeam
-                  }
+                  {match.homeTeam} x{" "}
+                  {match.awayTeam}
                 </h2>
 
                 <p className="text-zinc-400 mt-2">
@@ -233,29 +226,34 @@ Todos os palpites serão apagados também.`
                 </p>
 
                 {match.finished ? (
-                  <p className="text-green-400 mt-4">
-                    Finalizado:{" "}
-                    {
-                      match.homeScore
-                    }{" "}
-                    x{" "}
-                    {
-                      match.awayScore
-                    }
-                  </p>
+                  <div className="mt-4">
+                    <p className="text-green-400 font-bold text-lg mb-4">
+                      🏆 Finalizado:{" "}
+                      {match.homeScore} x{" "}
+                      {match.awayScore}
+                    </p>
+
+                    <button
+                      onClick={() =>
+                        handleDelete(
+                          match.id
+                        )
+                      }
+                      className="bg-red-600 hover:bg-red-500 px-4 py-2 rounded font-bold"
+                    >
+                      🗑️ Excluir jogo
+                    </button>
+                  </div>
                 ) : (
                   <div className="mt-4">
                     <div className="flex gap-2 mb-4">
                       <input
                         type="number"
                         placeholder="Brasil"
-                        onChange={(
-                          e
-                        ) =>
+                        onChange={(e) =>
                           setHomeScore(
                             Number(
-                              e
-                                .target
+                              e.target
                                 .value
                             )
                           )
@@ -268,13 +266,10 @@ Todos os palpites serão apagados também.`
                         placeholder={
                           match.awayTeam
                         }
-                        onChange={(
-                          e
-                        ) =>
+                        onChange={(e) =>
                           setAwayScore(
                             Number(
-                              e
-                                .target
+                              e.target
                                 .value
                             )
                           )
@@ -290,9 +285,9 @@ Todos os palpites serão apagados também.`
                             match.id
                           )
                         }
-                        className="bg-blue-600 px-4 py-2 rounded"
+                        className="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded"
                       >
-                        Finalizar
+                        🏆 Finalizar
                       </button>
 
                       <button
@@ -301,9 +296,9 @@ Todos os palpites serão apagados também.`
                             match.id
                           )
                         }
-                        className="bg-red-600 px-4 py-2 rounded"
+                        className="bg-red-600 hover:bg-red-500 px-4 py-2 rounded"
                       >
-                        Excluir
+                        ❌ Excluir
                       </button>
                     </div>
                   </div>
